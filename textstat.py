@@ -59,7 +59,7 @@ class textstatistics:
         else:
             dic = Pyphen(lang=lang)
             count = 0
-            for word in text.split(' '):
+            for word in text.split():
                 word_hyphenated = dic.inserted(word)
                 count += max(1, word_hyphenated.count("-") + 1)
             return count
