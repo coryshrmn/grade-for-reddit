@@ -131,7 +131,7 @@ class textstatistics:
         return legacy_round(FKRA, 1)
 
     @repoze.lru.lru_cache(maxsize=128)
-    def polysyllabcount(self, text):
+    def trisyllab_count(self, text):
         count = 0
         for word in text.split():
             wrds = self.syllable_count(word)
@@ -143,7 +143,7 @@ class textstatistics:
     def smog_index(self, text):
         if self.sentence_count(text) >= 3:
             try:
-                poly_syllab = self.polysyllabcount(text)
+                poly_syllab = self.trisyllab_count(text)
                 SMOG = (1.043 * (30*(poly_syllab/self.sentence_count(text)))**.5) + 3.1291
                 return legacy_round(SMOG, 1)
             except:
