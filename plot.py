@@ -4,53 +4,86 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as plticker
 import numpy as np
 
-# 0th column is subreddit name, 5th column is fk grade
-input_dtype = [('name', 'S21'), ('score', float)]
-fname = 'grades.txt'
-data = np.loadtxt(fname, skiprows=1, usecols=(0,5), dtype=input_dtype)
-
+fname = 'stats.txt'
 hist_min = -3.5
 hist_max = 20.5
 hist_increment = 0.5
-
 hist_bins = np.arange(hist_min, hist_max + hist_increment, hist_increment)
-view_bins = np.copy(hist_bins)
-# each score is rounded to 0.1, offset the bins to prevent rounding error
-hist_bins -= 0.05
-# the last bin should catch all grades
-hist_bins[-1] = float('inf')
 
 # the last "bin" is not a real bin, it's the max
 hist_size = len(hist_bins) - 1
 
-names = np.unique(data['name'])
+input_dtype = [('name', 'U21'), ('median', float), ('hist', int, (hist_size,))]
+stats = np.loadtxt(fname, skiprows=1, dtype=input_dtype)
 
-# stats is (name_id, median, histogram...)
-stats = np.empty([len(names), 2 + hist_size])
+print(stats.shape)
 
-for i, name in enumerate(names):
-    mask = data['name'] == name
-    scores = data[mask]['score']
-
-    median = np.median(scores)
-    hist, _ = np.histogram(scores, bins=hist_bins)
-
-    hist = hist / hist.max()
-
-    stats[i,0] = i
-    stats[i,1] = median
-    stats[i,2:] = hist
-
-# sort by median
-stats = stats[stats[:,1].argsort()]
-
-extent = [view_bins[0], view_bins[-1], 0, len(names)]
-fig, ax = plt.subplots()
+extent = [hist_bins[0], hist_bins[-1], 0, len(stats)]
+#fig, ax = plt.subplots(figsize=(10,10))
+fig, ax = plt.subplots(figsize=(40,20))
+fig.set_size_inches(100, 100)
 ax.set_xlim(extent[0], extent[1])
 ax.set_ylim(extent[2], extent[3])
 
 # plot histogram heatmap
-ax.imshow(stats[:,2:], cmap="inferno", extent=extent)
+
+def normalize_hist(hist):
+    # normalize between subs, since they have different total comments
+    total_per_sub = np.apply_along_axis(np.sum, 1, hist)
+
+    # each row sums to 1
+    return (hist.transpose() / total_per_sub).transpose()
+
+# scale x logarithmically
+# x=0   -> 0
+# x=mid -> 0.5
+# x=max -> 1.0
+def log_scale(x, mid, max):
+    scale = (max - 2 * mid) / (mid ** 2)
+
+    return np.log1p(x * scale) / np.log1p(max * scale)
+
+# mid and max are the same as passed into log_scale
+# y is the result of log_scale(x, mid, max)
+# returns x
+def invert_log_scale(y, mid, max):
+    scale = (max - 2 * mid) / (mid ** 2)
+
+    return ((max * scale + 1) ** y - 1) / scale
+
+def log_hist(norm_hist):
+
+    median = np.mean(norm_hist)
+    mx = np.max(norm_hist)
+
+    # scale such that the median becomes 0.5 after log
+    scale = (mx - 2 * median) / (median ** 2)
+
+    # logarithmic, and divide to bring into range 0-1
+    hist = np.log1p(norm_hist * scale)
+    return hist / hist.max()
+
+
+hist = stats['hist'].astype(float)
+hist = normalize_hist(hist)
+scale_mid = np.percentile(hist, 90)
+scale_max = np.max(hist)
+
+print('old min: ' + str(np.min(hist)))
+print('old max: ' + str(np.max(hist)))
+print('old median: ' + str(np.median(hist)))
+print('old mean: ' + str(np.mean(hist)))
+
+hist = log_scale(hist, scale_mid, scale_max)
+
+print('new min: ' + str(np.min(hist)))
+print('new max: ' + str(np.max(hist)))
+print('new median: ' + str(np.median(hist)))
+print('new mean: ' + str(np.mean(hist)))
+
+cax = ax.imshow(hist, cmap="inferno", extent=extent)
+
+ax.set_xlabel('Grade Level')
 
 # display xticks at top too
 ax.tick_params(top=True, labeltop=True)
@@ -65,15 +98,22 @@ xticks = [int(x) for x in ax.get_xticks().tolist()]
 xticks[-2] = str(int(hist_max)) + '+'
 ax.set_xticklabels(xticks)
 
+ax.autoscale(enable=False)
+
 # draw subreddit name labels
 label_x = -3.7
-for r in range(len(names)):
-    name = names[int(stats[r, 0])]
-    median = stats[r, 1]
+for i, row in enumerate(stats):
+    name = row['name']
+    median = row['median']
+    y = len(stats) - i - 0.5
 
-    label = "%s (%.1f)" % (name.decode('utf-8'), median);
-
-    y = len(names) - r - 0.5
+    label = "%s (%.1f)" % (name, median);
     ax.text(label_x, y, label, horizontalalignment='right', verticalalignment='center')
+
+cbar_ticks = np.linspace(0, 1, num=10)
+cbar_tick_labels = ['%.1f%%' % (100 * invert_log_scale(v, scale_mid, scale_max)) for v in cbar_ticks]
+cbar = fig.colorbar(cax, ticks=cbar_ticks, orientation='horizontal')
+cbar.set_label('Comments in Subreddit')
+cbar.ax.set_xticklabels(cbar_tick_labels)
 
 plt.show()
