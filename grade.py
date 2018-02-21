@@ -50,16 +50,26 @@ reddit = praw.Reddit(client_id=cred['client_id'],
 
 for (sub_i, sub) in enumerate(subs, 1):
     print("sub: %s" % sub)
+    if sub == 'askouija':
+        # askouija has significantly different comments at high nesting levels,
+        # make sure we get them all
+        more_limit = None
+    else:
+        # I wish I could parse all comments, but it would take days or weeks for askreddit
+        more_limit = 32
+
     sub = reddit.subreddit(sub)
     posts = sub.top(time_filter='month', limit=post_limit)
     for (post_i, post) in enumerate(posts, 1):
-        post.comments.replace_more(limit=None)
-        for comment in post.comments.list():
+        # echo progress
+        print("sub %3d/%3d; post %4d/%4d" % (sub_i, sub_limit, post_i, post_limit))
+        post.comments.replace_more(limit=more_limit)
+        print("replaced more")
+        for (comment_i, comment) in enumerate(post.comments.list()):
+            print("sub %3d/%3d; post %4d/%4d; comment %6d/%6d;" % (sub_i, sub_limit, post_i, post_limit, comment_i, post.num_comments))
             try:
                 fields = parse_comment(sub.display_name, comment.body)
             except:
                 continue
             line = '\t'.join([str(x) for x in fields])
             print(line, file=out)
-        # echo progress
-        print("sub %3d/%3d; post %4d/%4d" % (sub_i, sub_limit, post_i, post_limit))
