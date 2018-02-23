@@ -1,4 +1,4 @@
-# Reddit Grade
+# Grade for Reddit
 
 Scrape Reddit comments and evaluate them using the [Flesch-Kincaid grade level algorithm](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests#Flesch%E2%80%93Kincaid_grade_level)
 
