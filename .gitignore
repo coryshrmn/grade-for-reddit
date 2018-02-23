@@ -1,2 +1,6 @@
 cred.json
-out.txt
+subs.txt
+grades.txt
+stats.txt
+__pycache__
+
