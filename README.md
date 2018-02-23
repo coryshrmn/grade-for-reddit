@@ -57,3 +57,9 @@ Scrape Reddit comments and evaluate them using the [Flesch-Kincaid grade level a
 5. Plot the data
 
    `./plot.py` reads `stats.txt` and plots a heatmap. You may need to manually adjust figure size.
+
+## Result
+
+225 subreddits, using top of last month, from Febuary 2018:
+
+![2018-02 Result](result/2018-02.png)
