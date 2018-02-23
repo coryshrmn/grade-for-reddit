@@ -34,7 +34,7 @@ Scrape Reddit comments and evaluate them using the [Flesch-Kincaid grade level a
    {
        "client_id": "public id",
        "client_secret": "secret key",
-       "user_agent": "my user agent"
+       "user_agent": "script:my-app-name:v0.0.1 (by /u/me)"
    }
    ```
 
