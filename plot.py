@@ -16,14 +16,13 @@ hist_size = len(hist_bins) - 1
 input_dtype = [('name', 'U21'), ('median', float), ('hist', int, (hist_size,))]
 stats = np.loadtxt(fname, skiprows=1, dtype=input_dtype)
 
+# put highest grade subreddits on top
+stats = np.flip(stats, 0)
+
 print(stats.shape)
 
 extent = [hist_bins[0], hist_bins[-1], 0, len(stats)]
-#fig, ax = plt.subplots(figsize=(10,10))
-fig, ax = plt.subplots(figsize=(40,20))
-fig.set_size_inches(100, 100)
-ax.set_xlim(extent[0], extent[1])
-ax.set_ylim(extent[2], extent[3])
+fig, ax = plt.subplots()
 
 # plot histogram heatmap
 
@@ -81,8 +80,9 @@ print('new max: ' + str(np.max(hist)))
 print('new median: ' + str(np.median(hist)))
 print('new mean: ' + str(np.mean(hist)))
 
-cax = ax.imshow(hist, cmap="inferno", extent=extent)
+cax = ax.imshow(hist, cmap="inferno", extent=extent, aspect='auto')
 
+ax.set_title('Grade Levels for Reddit Comment Comprehension', y=1.04)
 ax.set_xlabel('Grade Level')
 
 # display xticks at top too
@@ -96,9 +96,7 @@ ax.tick_params(left=False, labelleft=False)
 # add a plus to the last label, since the final histogram bin includes to infinity
 xticks = [int(x) for x in ax.get_xticks().tolist()]
 xticks[-2] = str(int(hist_max)) + '+'
-ax.set_xticklabels(xticks)
-
-ax.autoscale(enable=False)
+ax.set_xticklabels(xticks, ha='left')
 
 # draw subreddit name labels
 label_x = -3.7
@@ -112,7 +110,7 @@ for i, row in enumerate(stats):
 
 cbar_ticks = np.linspace(0, 1, num=10)
 cbar_tick_labels = ['%.1f%%' % (100 * invert_log_scale(v, scale_mid, scale_max)) for v in cbar_ticks]
-cbar = fig.colorbar(cax, ticks=cbar_ticks, orientation='horizontal')
+cbar = fig.colorbar(cax, ticks=cbar_ticks, orientation='horizontal', fraction=0.035, pad=0.08)
 cbar.set_label('Comments in Subreddit')
 cbar.ax.set_xticklabels(cbar_tick_labels)
 
